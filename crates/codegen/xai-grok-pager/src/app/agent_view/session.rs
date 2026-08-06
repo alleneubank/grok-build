@@ -84,6 +84,7 @@ impl AgentView {
             session_binding_epoch: 0,
             scrollback,
             prompt,
+            custom_status_line_state: Default::default(),
             tip_typing_dismissed: false,
             todo: TodoPane::new(),
             tasks: TasksPane::new(),

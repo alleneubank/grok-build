@@ -1,5 +1,49 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 use xai_grok_config_types::DisplayRefreshSettings;
+
+/// Command-backed custom status line for the TUI (Claude Code / Codex compatible).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CustomStatusLineType {
+    Command,
+}
+
+/// `[ui.custom_status_line]` — spawn a command with a JSON snapshot on stdin;
+/// render its first ANSI line under the prompt.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CustomStatusLineConfig {
+    #[serde(rename = "type", default = "default_custom_status_line_type")]
+    pub kind: CustomStatusLineType,
+
+    /// Shell command that receives a bounded JSON snapshot on stdin and writes
+    /// one ANSI status line on stdout (e.g. `sox-agent-statusline`, `statusline`).
+    pub command: String,
+
+    /// Extra environment variables supplied only to the status line command.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub env: BTreeMap<String, String>,
+
+    /// Blank rows to reserve above the command-rendered status line (0–2).
+    #[serde(default)]
+    pub padding: u16,
+}
+
+fn default_custom_status_line_type() -> CustomStatusLineType {
+    CustomStatusLineType::Command
+}
+
+impl Default for CustomStatusLineConfig {
+    fn default() -> Self {
+        Self {
+            kind: CustomStatusLineType::Command,
+            command: String::new(),
+            env: BTreeMap::new(),
+            padding: 0,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -176,6 +220,12 @@ pub struct UiConfig {
     /// `None` inherits remote/default; skipped when untouched.
     #[serde(default, skip_serializing_if = "DisplayRefreshSettings::is_default")]
     pub display_refresh: DisplayRefreshSettings,
+    /// Command-backed custom status line under the prompt (Claude Code
+    /// `statusLine` / Codex `tui.custom_status_line` shape). When unset, Grok
+    /// falls back to `~/.claude/settings.json` `statusLine` so an existing
+    /// Claude Code statusline command works without a second config.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_status_line: Option<CustomStatusLineConfig>,
 }
 
 /// User-config opt-outs for the per-tip contextual hints, serialized as
@@ -224,6 +274,41 @@ impl ContextualHints {
 }
 
 const DEFAULT_MAX_THOUGHTS_WIDTH: u16 = 120;
+
+#[cfg(test)]
+mod custom_status_line_config_tests {
+    use super::*;
+
+    #[test]
+    fn custom_status_line_json_round_trip() {
+        let cfg = UiConfig {
+            custom_status_line: Some(CustomStatusLineConfig {
+                kind: CustomStatusLineType::Command,
+                command: "sox-agent-statusline".into(),
+                env: BTreeMap::from([("STATUSLINE_DEBUG".into(), "1".into())]),
+                padding: 1,
+            }),
+            ..Default::default()
+        };
+        let json = serde_json::to_string(&cfg).expect("serialize");
+        assert!(
+            json.contains("custom_status_line"),
+            "serialized ui must include custom_status_line:\n{json}"
+        );
+        let back: UiConfig = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(back.custom_status_line, cfg.custom_status_line);
+    }
+
+    #[test]
+    fn custom_status_line_absent_by_default() {
+        let cfg = UiConfig::default();
+        let json = serde_json::to_string(&cfg).expect("serialize");
+        assert!(
+            !json.contains("custom_status_line"),
+            "default must skip empty custom_status_line:\n{json}"
+        );
+    }
+}
 
 fn deserialize_keep_text_selection<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
@@ -289,6 +374,7 @@ impl Default for UiConfig {
             contextual_hints: ContextualHints::default(),
             combine_queued_prompts: None,
             display_refresh: DisplayRefreshSettings::default(),
+            custom_status_line: None,
         }
     }
 }

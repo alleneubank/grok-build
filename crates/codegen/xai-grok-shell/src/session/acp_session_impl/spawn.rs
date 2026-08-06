@@ -1258,7 +1258,7 @@ pub(crate) async fn spawn_session_actor(
                 false,
             );
             let git_root = xai_grok_workspace::session::git::find_git_root_from_path(cwd_path).ok();
-            let (registry, errors) = crate::util::hooks::discover_hooks(
+            let (mut registry, errors) = crate::util::hooks::discover_hooks(
                 git_root.as_deref(),
                 &rebuild_spec.compat,
                 project_trusted,
@@ -1267,6 +1267,12 @@ pub(crate) async fn spawn_session_actor(
                 tracing::warn!(error = ?e, "hook loading error");
             }
             hook_discovery_errors = errors;
+            // Same plugin-hook append as mid-session reload: Claude-compat and
+            // Grok plugins that ship hooks/hooks.json must be active at cold
+            // start, not only after `/hooks` → reload.
+            if let Some(ref pr) = plugin_registry {
+                crate::util::hooks::append_active_plugin_hooks(&mut registry, pr);
+            }
             if registry.is_empty() {
                 None
             } else {
@@ -1783,6 +1789,9 @@ pub(crate) async fn spawn_session_actor(
         );
     }
     session.emit_resolved_tool_overrides();
+    // Wire lifecycle PermissionRequest into the permission manager so it fires
+    // only when an interactive chooser is about to show (not on auto-approve).
+    session.sync_permission_request_hooks();
     {
         let drainer_session = session.clone();
         let mut sampler_event_rx = sampler_event_rx;

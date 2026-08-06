@@ -1001,6 +1001,8 @@ mod tests {
 
     #[test]
     fn claude_settings_with_unknown_hook_events_skipped_leniently() {
+        // Claude-compat: known events (including PermissionRequest) load;
+        // still-unknown Claude events (TaskCreated, …) are skipped without error.
         let json = r#"{
             "hooks": {
                 "PreToolUse": [
@@ -1025,11 +1027,18 @@ mod tests {
         }"#;
         let (specs, errors) = parse_hook_file(json, Path::new("/tmp/settings.json"));
         assert!(errors.is_empty(), "unexpected errors: {errors:?}");
-        assert_eq!(specs.len(), 2);
+        assert_eq!(specs.len(), 3);
         let has_pre = specs.iter().any(|s| s.event == HookEventName::PreToolUse);
         let has_post = specs.iter().any(|s| s.event == HookEventName::PostToolUse);
+        let has_perm_req = specs
+            .iter()
+            .any(|s| s.event == HookEventName::PermissionRequest);
         assert!(has_pre, "expected PreToolUse hook");
         assert!(has_post, "expected PostToolUse hook");
+        assert!(
+            has_perm_req,
+            "expected PermissionRequest hook (Claude-compat)"
+        );
     }
 
     /// A `command` referencing a process-env var must be expanded at load time,

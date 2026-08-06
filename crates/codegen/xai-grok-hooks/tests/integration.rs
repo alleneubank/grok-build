@@ -363,6 +363,20 @@ async fn new_event_types_fire_and_receive_correct_envelope() {
             ],
         },
         Case {
+            event_name: HookEventName::PermissionRequest,
+            json_key: "PermissionRequest",
+            payload: HookPayload::PermissionRequest {
+                tool_name: "run_terminal_command".into(),
+                tool_use_id: "call-pr".into(),
+                tool_input: serde_json::json!({"command": "rm -rf /tmp/x"}),
+                tool_input_truncated: false,
+            },
+            assertions: vec![
+                ("hookEventName", "permission_request".into()),
+                ("toolName", "run_terminal_command".into()),
+            ],
+        },
+        Case {
             event_name: HookEventName::PreCompact,
             json_key: "PreCompact",
             payload: HookPayload::PreCompact {
@@ -784,10 +798,11 @@ async fn lenient_parsing_with_mixed_claude_events() {
             "PreCompact": [
                 { "hooks": [{ "type": "command", "command": "echo compact" }] }
             ],
-            // Unknown external-only events; must not break the above.
+            // Claude-compat PermissionRequest is a first-class Grok event.
             "PermissionRequest": [
                 { "hooks": [{ "type": "command", "command": "echo perm-req" }] }
             ],
+            // Still-unknown external-only events; must not break the above.
             "TaskCreated": [
                 { "hooks": [{ "type": "command", "command": "echo task" }] }
             ],
@@ -806,6 +821,11 @@ async fn lenient_parsing_with_mixed_claude_events() {
         1
     );
     assert_eq!(registry.hooks_for(HookEventName::PreCompact).len(), 1);
+    assert_eq!(
+        registry.hooks_for(HookEventName::PermissionRequest).len(),
+        1,
+        "PermissionRequest must load (not skip as unknown)"
+    );
 
     let ctx = RunContext {
         session_id: "test",

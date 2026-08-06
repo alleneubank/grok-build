@@ -304,6 +304,11 @@ pub enum PermissionCommand {
     SetProjectInstructions(Option<String>),
     /// Reset per-tool permission state back to defaults.
     ResetState,
+    /// Install or clear the lifecycle `PermissionRequest` hook context
+    /// (registry + session envelope fields). `None` disables emission.
+    SetPermissionRequestHooks(
+        Option<std::sync::Arc<super::lifecycle_hooks::PermissionRequestHookContext>>,
+    ),
     Shutdown,
 }
 impl From<&xai_grok_tools::types::ToolInput> for AccessKind {

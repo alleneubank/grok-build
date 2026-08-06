@@ -1175,6 +1175,7 @@ mod tests {
                 "hook.post_tool_use_failure",
             ),
             (HookEventName::PermissionDenied, "hook.permission_denied"),
+            (HookEventName::PermissionRequest, "hook.permission_request"),
             (HookEventName::UserPromptSubmit, "hook.user_prompt_submit"),
             (HookEventName::Notification, "hook.notification"),
             (HookEventName::SubagentStart, "hook.subagent_start"),
@@ -1197,13 +1198,14 @@ mod tests {
                 | HookEventName::PostToolUse
                 | HookEventName::PostToolUseFailure
                 | HookEventName::PermissionDenied
+                | HookEventName::PermissionRequest
                 | HookEventName::UserPromptSubmit
                 | HookEventName::Notification
                 | HookEventName::SubagentStart
                 | HookEventName::SubagentStop
                 | HookEventName::SubagentEnd
                 | HookEventName::PreCompact
-                | HookEventName::PostCompact => 16,
+                | HookEventName::PostCompact => 17,
             }
         };
         assert_eq!(

@@ -36,6 +36,7 @@ pub(crate) fn hook_spec_to_info(spec: &xai_grok_hooks::config::HookSpec) -> Hook
         HookEventName::PostToolUse => HookEvent::PostToolUse,
         HookEventName::PostToolUseFailure => HookEvent::PostToolUseFailure,
         HookEventName::PermissionDenied => HookEvent::PermissionDenied,
+        HookEventName::PermissionRequest => HookEvent::PermissionRequest,
         // User / notification
         HookEventName::UserPromptSubmit => HookEvent::UserPromptSubmit,
         HookEventName::Notification => HookEvent::Notification,

@@ -51,6 +51,8 @@ pub struct AppRenderParams<'a> {
     /// attached-agent popup). Feeds the hint path so the bar never
     /// advertises `Esc cancel` while an app-level owner would consume it.
     pub esc_owned_before_agent: bool,
+    /// Live `[ui]` snapshot for command-backed custom statusline resolution.
+    pub ui: Option<&'a xai_grok_shell::agent::config::UiConfig>,
 }
 /// What the bottom shortcuts bar renders this frame.
 enum ShortcutsBarContent {
@@ -875,8 +877,14 @@ impl AgentView {
             voice_listening,
             voice_interim,
             esc_owned_before_agent,
+            ui,
         } = app_params;
         self.scrollback.begin_frame();
+        // Refresh the under-prompt custom status line before layout so height
+        // accounts for a newly-arrived render.
+        if let Some(ui) = ui {
+            self.tick_custom_status_line(ui, area.width);
+        }
         self.in_dashboard_overlay = in_dashboard_overlay;
         self.overlay_can_cycle = overlay_can_cycle;
         let super::BannerSlotParams {
@@ -1339,6 +1347,11 @@ impl AgentView {
             _ => 1,
         };
         let follow_ups_height = u16::from(self.follow_ups.is_some());
+        let custom_status_height = if self.is_subagent_view {
+            0
+        } else {
+            self.custom_status_line_state.height()
+        };
         let timeline_width = crate::views::timeline::rail_width(
             appearance.show_timeline,
             self.is_subagent_view,
@@ -1363,6 +1376,7 @@ impl AgentView {
             0,
             prompt_gap,
             voice_recording_height,
+            custom_status_height,
             1,
             compact,
         );
@@ -1439,6 +1453,7 @@ impl AgentView {
                         0,
                         prompt_gap,
                         voice_recording_height,
+                        custom_status_height,
                         1,
                         compact,
                     );
@@ -3031,6 +3046,18 @@ impl AgentView {
             if let Some(escapes) = prompt_result_inner.post_flush_escapes {
                 prompt_post_flush = Some(escapes.into());
             }
+        }
+        if let Some(ansi) = self.custom_status_line_state.rendered_ansi()
+            && layout.custom_status.height > 0
+            && !self.is_subagent_view
+        {
+            crate::views::custom_status_line::render(
+                layout.custom_status,
+                buf,
+                ansi,
+                self.custom_status_line_state.padding(),
+                &theme,
+            );
         }
         if self.prompt.file_search_visible() {
             use crate::views::file_search::dropdown::{MAX_DROPDOWN_ROWS, render_dropdown};

@@ -1232,6 +1232,7 @@ pub(super) mod paste_key_tests {
             0,
             0,
             0,
+            0,
             1,
             false,
         );

@@ -8,6 +8,7 @@ pub mod btw_overlay;
 pub mod completion_dropdown;
 pub mod context_bar;
 pub mod credit_bar;
+pub mod custom_status_line;
 pub mod dashboard;
 pub mod debug_style;
 pub mod extensions_modal;

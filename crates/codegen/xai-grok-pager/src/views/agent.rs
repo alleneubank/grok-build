@@ -122,6 +122,8 @@ pub struct AgentViewLayout {
     /// shown only while voice capture is active.
     pub voice_recording: Rect,
     pub prompt: Rect,
+    /// Command-backed custom status line directly under the prompt.
+    pub custom_status: Rect,
     pub shortcuts: Rect,
     /// Scrollback area narrowed for scrollbar (content rendering uses this).
     pub scrollback_content: Rect,
@@ -149,6 +151,8 @@ impl AgentViewLayout {
     /// is force-suppressed on short terminals on the same `SHORT_TERMINAL_ROWS`
     /// rule as the CTA row.
     /// When `startup_warning_height` is 0, the startup warning area is omitted.
+    /// When `custom_status_height` is 0, the under-prompt custom status line is
+    /// omitted.
     /// `prompt_gap` is 0 or 1 — controls the gap row between turn status
     /// (or scrollback) and the prompt widget.
     /// `timeline_width` reserves rail columns for the timeline sidebar in
@@ -173,6 +177,7 @@ impl AgentViewLayout {
         startup_warning_height: u16,
         prompt_gap: u16,
         voice_recording_height: u16,
+        custom_status_height: u16,
         shortcuts_height: u16,
         compact: bool,
     ) -> Self {
@@ -253,6 +258,9 @@ impl AgentViewLayout {
             constraints.push(Constraint::Length(voice_recording_height));
         }
         constraints.push(Constraint::Length(prompt_height));
+        if custom_status_height > 0 {
+            constraints.push(Constraint::Length(custom_status_height));
+        }
         let shortcuts_gap = if bottom_vpad == 0 { 0u16 } else { 1 };
         if shortcuts_gap > 0 {
             constraints.push(Constraint::Length(shortcuts_gap));
@@ -356,6 +364,13 @@ impl AgentViewLayout {
         };
         let prompt = chunks[i];
         i += 1;
+        let custom_status = if custom_status_height > 0 {
+            let r = chunks[i];
+            i += 1;
+            r
+        } else {
+            Rect::default()
+        };
         if shortcuts_gap > 0 {
             i += 1;
         }
@@ -396,6 +411,7 @@ impl AgentViewLayout {
             follow_ups,
             voice_recording,
             prompt,
+            custom_status,
             shortcuts,
             scrollback_content,
             scrollbar_x,
@@ -2121,6 +2137,7 @@ mod tests {
             0,
             0,
             0,
+            0,
             1,
             false,
         )
@@ -2142,6 +2159,7 @@ mod tests {
             scrollbar_cfg,
             timeline_width,
             2,
+            0,
             0,
             0,
             0,
@@ -2189,6 +2207,46 @@ mod tests {
             "no carve-out without the scrollbar gutter"
         );
     }
+    #[test]
+    fn custom_status_row_present_under_prompt() {
+        let area = Rect::new(0, 0, 80, 40);
+        let layout_cfg = LayoutConfig::default();
+        let scrollbar_cfg = ScrollbarConfig::default();
+        let layout = AgentViewLayout::compute(
+            area,
+            &layout_cfg,
+            &scrollbar_cfg,
+            0,
+            2, // prompt
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1, // custom_status
+            1, // shortcuts
+            false,
+        );
+        assert_eq!(layout.custom_status.height, 1);
+        assert!(
+            layout.custom_status.y >= layout.prompt.y + layout.prompt.height,
+            "custom status must sit under the prompt (prompt ends {}, status at {})",
+            layout.prompt.y + layout.prompt.height,
+            layout.custom_status.y,
+        );
+        assert!(
+            layout.custom_status.y < layout.shortcuts.y,
+            "custom status must sit above shortcuts"
+        );
+    }
+
     #[test]
     fn plugin_cta_row_present_above_prompt() {
         let area = Rect::new(0, 0, 80, 40);

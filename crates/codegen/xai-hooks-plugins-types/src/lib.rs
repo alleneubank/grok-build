@@ -87,6 +87,7 @@ pub enum HookEvent {
     PostToolUse,
     PostToolUseFailure,
     PermissionDenied,
+    PermissionRequest,
     // User / notification
     UserPromptSubmit,
     Notification,
@@ -123,6 +124,7 @@ impl HookEvent {
             | Self::PostToolUse
             | Self::PostToolUseFailure
             | Self::PermissionDenied
+            | Self::PermissionRequest
             | Self::UserPromptSubmit
             | Self::Notification
             | Self::SubagentStart
@@ -148,6 +150,7 @@ impl std::fmt::Display for HookEvent {
             Self::Notification => write!(f, "Notification"),
             Self::UserPromptSubmit => write!(f, "Prompt Submit"),
             Self::PermissionDenied => write!(f, "Permission Denied"),
+            Self::PermissionRequest => write!(f, "Permission Request"),
             Self::SubagentStart => write!(f, "Subagent Start"),
             Self::SubagentStop => write!(f, "Subagent Stop"),
             Self::PreCompact => write!(f, "Pre-Compact"),
@@ -875,6 +878,7 @@ mod tests {
             (HookEvent::Notification, r#""notification""#),
             (HookEvent::UserPromptSubmit, r#""user_prompt_submit""#),
             (HookEvent::PermissionDenied, r#""permission_denied""#),
+            (HookEvent::PermissionRequest, r#""permission_request""#),
             (HookEvent::SubagentStart, r#""subagent_start""#),
             (HookEvent::SubagentStop, r#""subagent_stop""#),
             (HookEvent::PreCompact, r#""pre_compact""#),

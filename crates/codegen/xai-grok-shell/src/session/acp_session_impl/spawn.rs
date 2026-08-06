@@ -1777,6 +1777,9 @@ pub(crate) async fn spawn_session_actor(
         );
     }
     session.emit_resolved_tool_overrides();
+    // Wire lifecycle PermissionRequest into the permission manager so it fires
+    // only when an interactive chooser is about to show (not on auto-approve).
+    session.sync_permission_request_hooks();
     {
         let drainer_session = session.clone();
         let mut sampler_event_rx = sampler_event_rx;

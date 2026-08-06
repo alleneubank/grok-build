@@ -688,6 +688,9 @@ impl SessionActor {
                 *reg = Some(std::sync::Arc::new(registry));
             }
         }
+        // Keep the permission-manager PermissionRequest fire path in sync with
+        // the session registry (including plugin hooks discovered on reload).
+        self.sync_permission_request_hooks();
         tracing::info!(hook_count, "hooks reloaded mid-session");
 
         // Notify pager about hooks change.

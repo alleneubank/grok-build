@@ -58,6 +58,7 @@ pub enum HookEventNameWire {
     PostToolUse,
     PostToolUseFailure,
     PermissionDenied,
+    PermissionRequest,
     UserPromptSubmit,
     Notification,
     SubagentStart,
@@ -79,6 +80,7 @@ impl HookEventNameWire {
             Self::PostToolUse => "post_tool_use",
             Self::PostToolUseFailure => "post_tool_use_failure",
             Self::PermissionDenied => "permission_denied",
+            Self::PermissionRequest => "permission_request",
             Self::UserPromptSubmit => "user_prompt_submit",
             Self::Notification => "notification",
             Self::SubagentStart => "subagent_start",
@@ -112,6 +114,7 @@ impl<'de> Deserialize<'de> for HookEventNameWire {
             "post_tool_use" => Self::PostToolUse,
             "post_tool_use_failure" => Self::PostToolUseFailure,
             "permission_denied" => Self::PermissionDenied,
+            "permission_request" => Self::PermissionRequest,
             "user_prompt_submit" => Self::UserPromptSubmit,
             "notification" => Self::Notification,
             "subagent_start" => Self::SubagentStart,
@@ -135,7 +138,7 @@ mod tests {
 
     #[test]
     fn hook_event_name_wire_snake_case_round_trip() {
-        // All 15 variants (mirrors upstream `event_name_deser_all_variants`).
+        // All 16 variants (mirrors upstream `event_name_deser_all_variants`).
         for (variant, wire) in [
             (HookEventNameWire::SessionStart, "session_start"),
             (HookEventNameWire::SessionEnd, "session_end"),
@@ -148,6 +151,7 @@ mod tests {
                 "post_tool_use_failure",
             ),
             (HookEventNameWire::PermissionDenied, "permission_denied"),
+            (HookEventNameWire::PermissionRequest, "permission_request"),
             (HookEventNameWire::UserPromptSubmit, "user_prompt_submit"),
             (HookEventNameWire::Notification, "notification"),
             (HookEventNameWire::SubagentStart, "subagent_start"),

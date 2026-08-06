@@ -846,6 +846,20 @@ impl PermissionHandle {
         }
     }
 
+    /// Install or clear lifecycle `PermissionRequest` hooks fired when an
+    /// interactive permission chooser is about to show. Pass `None` to disable
+    /// (e.g. after hooks are unloaded). Safe to call any time after spawn.
+    pub fn set_permission_request_hooks(
+        &self,
+        ctx: Option<std::sync::Arc<crate::permission::PermissionRequestHookContext>>,
+    ) {
+        if let PermissionHandle::Actor { cmd_tx, .. } = self
+            && let Err(e) = cmd_tx.send(PermissionCommand::SetPermissionRequestHooks(ctx))
+        {
+            tracing::error!(?e, "failed to send set permission-request hooks command");
+        }
+    }
+
     pub fn is_yolo_mode(&self) -> bool {
         match self {
             PermissionHandle::AllowAll => true,
@@ -1350,6 +1364,11 @@ fn spawn_permission_manager_with_pin(
         let prompter = AcpPrompter::new(session_id.clone(), gateway.clone(), client_type)
             .with_hub_permission(hub_permission)
             .with_remember_tool_approvals(remember_tool_approvals);
+        // Lifecycle PermissionRequest hooks: set after session hook discovery via
+        // `PermissionHandle::set_permission_request_hooks`.
+        let mut permission_request_hooks: Option<
+            Arc<crate::permission::PermissionRequestHookContext>,
+        > = None;
         let mut yolo_mode = initial_yolo;
         let mut auto_mode = seed_auto;
         if seed_auto {
@@ -1435,6 +1454,9 @@ fn spawn_permission_manager_with_pin(
                     tracing::info!(
                         "Permission state reset to defaults (including session edit allow)"
                     );
+                }
+                PermissionCommand::SetPermissionRequestHooks(ctx) => {
+                    permission_request_hooks = ctx;
                 }
                 PermissionCommand::Request {
                     access,
@@ -2263,6 +2285,31 @@ fn spawn_permission_manager_with_pin(
                         if let Some(tx) = slot.as_ref() {
                             let _ = tx.send(());
                         }
+                    }
+                    // Lifecycle PermissionRequest: only when we are about to show
+                    // the interactive chooser (this branch). Auto-allow / deny /
+                    // YOLO paths return earlier and never reach here.
+                    if let Some(ref hooks_ctx) = permission_request_hooks {
+                        let hook_perm_mode = if yolo_mode {
+                            "bypassPermissions"
+                        } else if auto_mode {
+                            "auto"
+                        } else {
+                            "default"
+                        };
+                        let raw_input = tool_call_update
+                            .fields
+                            .raw_input
+                            .clone()
+                            .unwrap_or(serde_json::Value::Null);
+                        crate::permission::lifecycle_hooks::fire_permission_request(
+                            hooks_ctx,
+                            &tool_name,
+                            &tool_id,
+                            raw_input,
+                            hook_perm_mode,
+                        )
+                        .await;
                     }
                     let (decision, outcome_str, user_prompted) = match &access {
                         AccessKind::Bash(cmd) => {

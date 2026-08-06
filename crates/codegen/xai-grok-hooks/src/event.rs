@@ -133,6 +133,14 @@ hook_events! {
         aliases: ["PermissionDenied", "permission_denied", "permissionDenied"],
         traits: (Observe, Tested, true),
     },
+    /// Fires when an interactive tool-permission chooser is about to be shown
+    /// (human must approve/deny). Not on auto-approved tools (safe readers,
+    /// remembered grants, always-approve / YOLO). Observe-only in v1.
+    PermissionRequest {
+        display: "permission_request",
+        aliases: ["PermissionRequest", "permission_request", "permissionRequest"],
+        traits: (Observe, Tested, true),
+    },
     /// Fires on a genuine turn-end with stop decision control (a hook can block);
     /// not on user interrupts (API-error turns fire `StopFailure`); observe-only at session end.
     Stop {
@@ -449,6 +457,19 @@ pub enum HookPayload {
         #[serde(rename = "toolInputTruncated")]
         tool_input_truncated: bool,
     },
+    /// Same tool fields as `PermissionDenied` / `PreToolUse` so matchers and
+    /// scripts share one shape across the permission lifecycle.
+    PermissionRequest {
+        /// Resolved underlying tool for meta-dispatch tools (see `PreToolUse`).
+        #[serde(rename = "toolName")]
+        tool_name: String,
+        #[serde(rename = "toolUseId")]
+        tool_use_id: String,
+        #[serde(rename = "toolInput")]
+        tool_input: serde_json::Value,
+        #[serde(rename = "toolInputTruncated")]
+        tool_input_truncated: bool,
+    },
 
     UserPromptSubmit {
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -508,7 +529,8 @@ impl HookPayload {
             Self::PreToolUse { tool_name, .. }
             | Self::PostToolUse { tool_name, .. }
             | Self::PostToolUseFailure { tool_name, .. }
-            | Self::PermissionDenied { tool_name, .. } => tool_name,
+            | Self::PermissionDenied { tool_name, .. }
+            | Self::PermissionRequest { tool_name, .. } => tool_name,
             Self::Notification {
                 notification_type, ..
             } => notification_type,
@@ -577,6 +599,11 @@ mod tests {
                 HookEventName::PermissionDenied,
             ),
             (
+                "PermissionRequest",
+                "permission_request",
+                HookEventName::PermissionRequest,
+            ),
+            (
                 "SubagentStart",
                 "subagent_start",
                 HookEventName::SubagentStart,
@@ -613,6 +640,7 @@ mod tests {
             (HookEventName::Notification, "notification"),
             (HookEventName::UserPromptSubmit, "user_prompt_submit"),
             (HookEventName::PermissionDenied, "permission_denied"),
+            (HookEventName::PermissionRequest, "permission_request"),
             (HookEventName::SubagentStart, "subagent_start"),
             (HookEventName::SubagentStop, "subagent_stop"),
             (HookEventName::SubagentEnd, "subagent_stop"), // alias collapses

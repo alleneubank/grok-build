@@ -1,3 +1,5 @@
 /target
 **/*.rs.bk
 .DS_Store
+# Local dogfood + fork release output (never commit binaries).
+/dist/

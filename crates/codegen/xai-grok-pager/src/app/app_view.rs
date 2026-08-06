@@ -4859,6 +4859,7 @@ impl AppView {
                                     voice_listening,
                                     voice_interim: voice_interim.as_deref(),
                                     esc_owned_before_agent,
+                                    ui: Some(&self.current_ui),
                                 },
                             );
                             if let Some(modal) = self.import_claude_modal.as_mut() {
@@ -4977,6 +4978,7 @@ impl AppView {
                                                     link_spans,
                                                     AppRenderParams {
                                                         esc_owned_before_agent,
+                                                        ui: Some(&self.current_ui),
                                                         ..Default::default()
                                                     },
                                                 )

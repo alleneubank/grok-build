@@ -131,6 +131,19 @@ A temporary mac-only pin uses `os = ["macos"]` and is dogfood-only.
 - Lifecycle `PermissionRequest` when an interactive tool permission chooser shows
 - Plugin hooks (`hooks/hooks.json` from active Claude-compat plugins) load at
   session cold start — no `/hooks` → reload workaround
+- Command-backed custom status line under the prompt (Claude Code `statusLine` /
+  Codex `tui.custom_status_line` shape). Resolution order:
+  1. `[ui.custom_status_line]` in `~/.grok/config.toml`
+  2. `statusLine` from `~/.claude/settings.local.json` / `settings.json`
+
+  Example (optional — Claude settings already work without this):
+
+  ```toml
+  [ui.custom_status_line]
+  type = "command"
+  command = "sox-agent-statusline"
+  padding = 0
+  ```
 
 ## Related
 

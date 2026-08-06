@@ -225,6 +225,23 @@ impl SessionActor {
         }
     }
 
+    /// Push the current on-disk hook registry into the permission manager so
+    /// lifecycle `PermissionRequest` can fire at the interactive prompt site.
+    /// Call after session spawn and after mid-session hook reloads.
+    pub(super) fn sync_permission_request_hooks(&self) {
+        let ctx = self.hook_registry.borrow().as_ref().map(|registry| {
+            std::sync::Arc::new(
+                xai_grok_workspace::permission::PermissionRequestHookContext {
+                    registry: registry.clone(),
+                    session_id: self.session_id_string(),
+                    cwd: self.session_info.cwd.clone(),
+                    workspace_root: self.hook_resolved_workspace_root.clone(),
+                },
+            )
+        });
+        self.permissions.set_permission_request_hooks(ctx);
+    }
+
     /// Dispatch a non-blocking hook event: build the envelope, fire observe-only
     /// client hooks, then run the on-disk registry. No-op (no payload built) when no
     /// hook listens for `event`, so it stays inert when unused.

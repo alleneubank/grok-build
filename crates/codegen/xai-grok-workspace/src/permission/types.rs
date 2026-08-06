@@ -241,6 +241,11 @@ pub enum PermissionCommand {
     SetClassifierTranscript(Vec<super::auto_mode::ClassifierTurn>),
     SetProjectInstructions(Option<String>),
     ResetState,
+    /// Install or clear the lifecycle `PermissionRequest` hook context
+    /// (registry + session envelope fields). `None` disables emission.
+    SetPermissionRequestHooks(
+        Option<std::sync::Arc<super::lifecycle_hooks::PermissionRequestHookContext>>,
+    ),
     Shutdown,
 }
 impl From<&xai_grok_tools::types::ToolInput> for AccessKind {

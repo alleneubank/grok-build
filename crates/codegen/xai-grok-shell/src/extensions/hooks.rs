@@ -68,6 +68,7 @@ fn hook_spec_to_info_with(
         HookEventName::PostToolUse => HookEvent::PostToolUse,
         HookEventName::PostToolUseFailure => HookEvent::PostToolUseFailure,
         HookEventName::PermissionDenied => HookEvent::PermissionDenied,
+        HookEventName::PermissionRequest => HookEvent::PermissionRequest,
         HookEventName::UserPromptSubmit => HookEvent::UserPromptSubmit,
         HookEventName::Notification => HookEvent::Notification,
         HookEventName::SubagentStart => HookEvent::SubagentStart,

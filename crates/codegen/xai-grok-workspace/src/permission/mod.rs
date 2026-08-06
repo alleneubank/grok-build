@@ -4,6 +4,7 @@ pub mod claude_settings;
 mod exec_risk;
 mod gate_preflight;
 mod hub_permission;
+mod lifecycle_hooks;
 pub mod managed_policy;
 mod manager;
 mod policy;
@@ -57,6 +58,7 @@ pub use hub_permission::{
     PermissionHookTransport, ToolServerPermissionTransport, access_kind_for_hub_tool,
     hitl_permission_live_enabled, prompt_outcome_allows, request_permission_via_hub,
 };
+pub use lifecycle_hooks::PermissionRequestHookContext;
 
 pub(crate) fn init_metrics() {
     hub_permission::init_metrics();

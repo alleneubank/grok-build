@@ -122,6 +122,14 @@ hook_events! {
         aliases: ["PermissionDenied", "permission_denied", "permissionDenied"],
         traits: (Observe, Tested, true),
     },
+    /// Fires when an interactive tool-permission chooser is about to be shown
+    /// (human must approve/deny). Not on auto-approved tools (safe readers,
+    /// remembered grants, always-approve / YOLO). Observe-only in v1.
+    PermissionRequest {
+        display: "permission_request",
+        aliases: ["PermissionRequest", "permission_request", "permissionRequest"],
+        traits: (Observe, Tested, true),
+    },
     Stop {
         display: "stop",
         aliases: ["Stop", "stop"],
@@ -519,6 +527,19 @@ pub enum HookPayload {
         #[serde(rename = "toolInputTruncated")]
         tool_input_truncated: bool,
     },
+    /// Same tool fields as `PermissionDenied` / `PreToolUse` so matchers and
+    /// scripts share one shape across the permission lifecycle.
+    PermissionRequest {
+        /// Resolved underlying tool for meta-dispatch tools (see `PreToolUse`).
+        #[serde(rename = "toolName")]
+        tool_name: String,
+        #[serde(rename = "toolUseId")]
+        tool_use_id: String,
+        #[serde(rename = "toolInput")]
+        tool_input: serde_json::Value,
+        #[serde(rename = "toolInputTruncated")]
+        tool_input_truncated: bool,
+    },
 
     UserPromptSubmit {
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -574,7 +595,8 @@ impl HookPayload {
             Self::PreToolUse { tool_name, .. }
             | Self::PostToolUse { tool_name, .. }
             | Self::PostToolUseFailure { tool_name, .. }
-            | Self::PermissionDenied { tool_name, .. } => tool_name,
+            | Self::PermissionDenied { tool_name, .. }
+            | Self::PermissionRequest { tool_name, .. } => tool_name,
             Self::Notification {
                 notification_type, ..
             } => notification_type,
@@ -643,6 +665,11 @@ mod tests {
                 HookEventName::PermissionDenied,
             ),
             (
+                "PermissionRequest",
+                "permission_request",
+                HookEventName::PermissionRequest,
+            ),
+            (
                 "SubagentStart",
                 "subagent_start",
                 HookEventName::SubagentStart,
@@ -663,6 +690,32 @@ mod tests {
 
             let from_snake: HookEventName = serde_json::from_str(&format!("\"{snake}\"")).unwrap();
             assert_eq!(from_snake, *expected, "snake_case deser failed for {snake}");
+        }
+    }
+
+    #[test]
+    fn event_name_display_all_variants() {
+        let cases: &[(HookEventName, &str)] = &[
+            (HookEventName::SessionStart, "session_start"),
+            (HookEventName::PreToolUse, "pre_tool_use"),
+            (HookEventName::PostToolUse, "post_tool_use"),
+            (HookEventName::PostToolUseFailure, "post_tool_use_failure"),
+            (HookEventName::SessionEnd, "session_end"),
+            (HookEventName::Stop, "stop"),
+            (HookEventName::StopFailure, "stop_failure"),
+            (HookEventName::StopCancelled, "stop_cancelled"),
+            (HookEventName::Notification, "notification"),
+            (HookEventName::UserPromptSubmit, "user_prompt_submit"),
+            (HookEventName::PermissionDenied, "permission_denied"),
+            (HookEventName::PermissionRequest, "permission_request"),
+            (HookEventName::SubagentStart, "subagent_start"),
+            (HookEventName::SubagentStop, "subagent_stop"),
+            (HookEventName::SubagentEnd, "subagent_stop"), // alias collapses
+            (HookEventName::PreCompact, "pre_compact"),
+            (HookEventName::PostCompact, "post_compact"),
+        ];
+        for (event, expected) in cases {
+            assert_eq!(&event.to_string(), expected, "Display wrong for {event:?}");
         }
     }
 

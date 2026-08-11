@@ -148,6 +148,7 @@ parking_lot.workspace = true
 nix = { workspace = true, features = ["signal"] }
 signal-hook = { workspace = true }
 libc = { workspace = true }
+wait-timeout = { workspace = true }
 
 # core-foundation: IOKit power assertions for sleep prevention (SleepInhibitor).
 [target.'cfg(target_os = "macos")'.dependencies]

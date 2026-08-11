@@ -13734,6 +13734,7 @@ dependencies = [
  "url",
  "urlencoding",
  "uuid",
+ "wait-timeout",
  "walkdir",
  "windows-sys 0.59.0",
  "xai-acp-lib",
